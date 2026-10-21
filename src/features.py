@@ -2,7 +2,7 @@
 
     python -m src.features        # reads data/<test>/, writes data/features.npz (a few minutes)
 
-Each snapshot is 1 s at 20 kHz (20,480 samples). The 12 features follow the warning signs Moïz lists
+Each snapshot is 1 s at 20 kHz (20,480 samples). The 12 features follow the classic signs of wear
 for machine health: overall level (RMS, peak), new frequency components (8 band levels) and
 intermittency (crest factor, kurtosis).
 """
@@ -18,7 +18,7 @@ CACHE = DATA / "features.npz"
 FS = 20_000
 N_BANDS = 8
 NAMES = ["rms", "peak", "crest", "kurtosis"] + [f"band{b}" for b in range(N_BANDS)]
-# Folder, columns kept (one accelerometer per bearing, like a single Moïz sensor), and the bearings that
+# Folder, columns kept (one accelerometer per bearing, like a single wireless sensor), and the bearings that
 # failed at the end of the test, from the IMS readme. Test 1 has x and y axes: we keep x (ch 1, 3, 5, 7).
 TESTS = {
     "test1": ("1st_test", [0, 2, 4, 6], [3, 4]),

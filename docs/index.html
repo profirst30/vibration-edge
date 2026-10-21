@@ -36,13 +36,13 @@
 </style>
 </head>
 <body>
-<div class="notice">Projet personnel, non affilié à Moïz et non validé par Moïz. Données publiques uniquement (NASA / IMS Bearing Data Set).</div>
+<div class="notice">Projet personnel. Données publiques uniquement (NASA / IMS Bearing Data Set).</div>
 <main>
   <h1>Vibrations : décider sur le capteur pour économiser la radio</h1>
-  <p class="lead">Un capteur alimenté par la chaleur perdue ne peut pas envoyer son signal vibratoire brut. Il doit calculer sur place et n'envoyer que l'essentiel. Voici ce que coûte et ce que rapporte chaque choix, sur de vrais roulements usés jusqu'à la panne.</p>
+  <p class="lead">Un capteur sans pile, alimenté par récupération d'énergie, ne peut pas envoyer son signal vibratoire brut. Il doit calculer sur place et n'envoyer que l'essentiel. Voici ce que coûte et ce que rapporte chaque choix, sur de vrais roulements usés jusqu'à la panne.</p>
 
-  <h2>Le problème, tel que je le comprends depuis votre site</h2>
-  <p>La page <a href="https://www.moiz-eh.com/machine-health-1">Machine health</a> décrit la surveillance des vibrations sans fil : niveau global qui monte, nouvelles fréquences, à-coups de plus en plus fréquents. La page <a href="https://www.moiz-eh.com/products">Produits</a> présente des capteurs sans pile, en radio LPWAN, et annonce du traitement d'IA embarqué pour Sequoia.</p>
+  <h2>Le problème</h2>
+  <p>En surveillance vibratoire de machines, les signes d'usure classiques sont un niveau global qui monte, de nouvelles fréquences et des à-coups de plus en plus fréquents. Les capteurs sans fil alimentés par récupération d'énergie émettent en radio LPWAN avec un budget d'énergie très serré.</p>
   <p>Un enregistrement d'une seconde pèse des dizaines de kilo-octets, alors qu'une trame LoRaWAN en porte au plus quelques centaines d'octets. Que calculer sur le nœud, et qu'envoyer ?</p>
 
   <h2>La démarche</h2>
@@ -101,7 +101,7 @@
 
   <footer>
     Nobel Djessou · ingénieur IA embarquée ·
-    <a href="https://github.com/profirst30/moiz-vibration-edge">code sur GitHub</a> ·
+    <a href="https://github.com/profirst30/vibration-edge">code sur GitHub</a> ·
     <a href="https://www.linkedin.com/in/nobel-djessou/">LinkedIn</a><br>
     Données : J. Lee, H. Qiu, G. Yu, J. Lin et Rexnord Technical Services (2007), IMS, University of Cincinnati, « Bearing Data Set », NASA Prognostics Data Repository.
   </footer>

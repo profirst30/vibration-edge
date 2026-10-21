@@ -1,18 +1,18 @@
 # Vibrations : décider sur le capteur pour économiser la radio
 
-**Un capteur alimenté par la chaleur perdue ne peut pas envoyer son signal vibratoire brut. Il doit calculer sur place et n'envoyer que l'essentiel. Ce dépôt mesure ce que coûte et ce que rapporte chaque choix, sur de vrais roulements usés jusqu'à la panne.**
+**Un capteur sans pile, alimenté par récupération d'énergie, ne peut pas envoyer son signal vibratoire brut. Il doit calculer sur place et n'envoyer que l'essentiel. Ce dépôt mesure ce que coûte et ce que rapporte chaque choix, sur de vrais roulements usés jusqu'à la panne.**
 
-Projet personnel, non affilié à Moïz et non validé par Moïz. Page de démo : https://profirst30.github.io/moiz-vibration-edge/
+Projet personnel. Page de démo : https://profirst30.github.io/vibration-edge/
 
-## Le problème, tel que je le comprends depuis votre site
+## Le problème
 
-La page [Machine health](https://www.moiz-eh.com/machine-health-1) décrit la surveillance des vibrations sans fil. Les signes d'alerte cités sont un niveau global qui monte, de nouvelles fréquences et des à-coups de plus en plus fréquents. La page [Produits](https://www.moiz-eh.com/products) présente des capteurs sans pile, alimentés par un écart de température, en radio LPWAN, et annonce pour Sequoia du traitement d'IA embarqué.
+En surveillance vibratoire de machines, les signes d'usure classiques sont un niveau global qui monte, de nouvelles fréquences et des à-coups de plus en plus fréquents. Les capteurs sans fil alimentés par récupération d'énergie (chaleur, vibration, lumière) émettent en radio LPWAN avec un budget d'énergie très serré.
 
 Un enregistrement vibratoire d'une seconde pèse des dizaines de kilo-octets, alors qu'une trame LoRaWAN en porte au plus quelques centaines d'octets. La question est donc : **que calculer sur le nœud, et qu'envoyer ?**
 
 ## Ce que fait le dépôt
 
-1. **Indicateurs sur le nœud** (`src/features.py`). Pour chaque enregistrement d'1 s à 20 kHz, 12 indicateurs, qui suivent les trois signes d'alerte de la page Machine health :
+1. **Indicateurs sur le nœud** (`src/features.py`). Pour chaque enregistrement d'1 s à 20 kHz, 12 indicateurs, qui suivent les trois signes d'usure :
    - le niveau global : RMS et crête ;
    - les nouvelles fréquences : niveau dans 8 bandes de 1,25 kHz, par FFT ;
    - les à-coups : facteur de crête et kurtosis.
@@ -82,7 +82,7 @@ Tous les chiffres ci-dessus sont écrits par `python -m src.run` à partir des d
 
 ## Limites
 
-- **Aucun microcontrôleur testé** : le temps de calcul est mesuré sur un PC portable. La puissance récoltée n'est pas modélisée, car votre site ne donne pas de chiffre en watts. Les stratégies sont donc comparées en temps d'antenne, sans parler d'énergie.
+- **Aucun microcontrôleur testé** : le temps de calcul est mesuré sur un PC portable. La puissance récoltée n'est pas modélisée : elle dépend du récupérateur et de son installation. Les stratégies sont donc comparées en temps d'antenne, sans parler d'énergie.
 - **Banc d'essai de laboratoire** : 2000 tr/min constants et une charge fixe. Une machine industrielle change de régime, et un z-score figé déclencherait à chaque changement.
 - **Pannes datées seulement « à la fin de l'essai »** d'après la documentation IMS. Il n'y a pas de date de début de défaut, donc les « heures avant la fin » mesurent une avance sur la casse, pas une précision de détection.
 - **Un seul accéléromètre par roulement** (l'axe x pour l'essai 1). Les essais 2 et 3 contiennent quelques enregistrements quasi nuls, machine arrêtée : ces instants sont exclus, et leur nombre est indiqué dans `results/results.json`.
