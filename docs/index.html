@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vibrations : décider sur le capteur · Nobel Djessou</title>
+<style>
+  :root { --bg: #ffffff; --surface: #f5f6f7; --line: #dee2e6; --fg: #212529; --muted: #5c6670; --primary: #1a5c9e; --accent: #fe8254; --ok: #1e7b4a; --err: #b02a37; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 20px 64px; }
+  .notice { background: var(--surface); color: var(--muted); font-size: 14px; padding: 8px 20px; text-align: center; border-bottom: 1px solid var(--line); }
+  h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.15; margin: 32px 0 8px; color: var(--primary); }
+  h2 { font-size: 22px; margin: 48px 0 12px; color: var(--primary); }
+  .lead { font-size: 18px; color: var(--muted); }
+  a { color: var(--primary); }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 0; list-style: none; }
+  .steps li { background: var(--surface); border-radius: 8px; padding: 14px 16px; border-top: 3px solid var(--accent); }
+  .steps b { display: block; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; margin: 8px 0 16px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; }
+  td.num, th.num { text-align: right; }
+  .yes { color: var(--err); font-weight: 600; } .ok { color: var(--ok); } .err { color: var(--err); }
+  .muted { color: var(--muted); font-size: 14px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+  select, input, button { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--fg); }
+  button { background: var(--primary); color: #fff; border-color: var(--primary); cursor: pointer; }
+  input { flex: 1; min-width: 240px; font-family: ui-monospace, Consolas, monospace; }
+  svg { width: 100%; height: auto; background: var(--surface); border-radius: 8px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  .legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; background: var(--c); }
+  pre { background: var(--surface); padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  footer { margin-top: 56px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="notice">Projet personnel, non affilié à Moïz et non validé par Moïz. Données publiques uniquement (NASA / IMS Bearing Data Set).</div>
+<main>
+  <h1>Vibrations : décider sur le capteur pour économiser la radio</h1>
+  <p class="lead">Un capteur alimenté par la chaleur perdue ne peut pas envoyer son signal vibratoire brut. Il doit calculer sur place et n'envoyer que l'essentiel. Voici ce que coûte et ce que rapporte chaque choix, sur de vrais roulements usés jusqu'à la panne.</p>
+
+  <h2>Le problème, tel que je le comprends depuis votre site</h2>
+  <p>La page <a href="https://www.moiz-eh.com/machine-health-1">Machine health</a> décrit la surveillance des vibrations sans fil : niveau global qui monte, nouvelles fréquences, à-coups de plus en plus fréquents. La page <a href="https://www.moiz-eh.com/products">Produits</a> présente des capteurs sans pile, en radio LPWAN, et annonce du traitement d'IA embarqué pour Sequoia.</p>
+  <p>Un enregistrement d'une seconde pèse des dizaines de kilo-octets, alors qu'une trame LoRaWAN en porte au plus quelques centaines d'octets. Que calculer sur le nœud, et qu'envoyer ?</p>
+
+  <h2>La démarche</h2>
+  <ol class="steps">
+    <li><b>1 · Indicateurs</b>12 valeurs par enregistrement d'1 s à 20 kHz : RMS, crête, facteur de crête, kurtosis et 8 bandes de fréquence.</li>
+    <li><b>2 · Détection</b>Un z-score et un autoencodeur INT8 (ONNX), qui apprennent chacun sur les 10 % premiers de la vie du capteur.</li>
+    <li><b>3 · Trames</b>26 octets pour les indicateurs, 2 octets pour une alerte, avec un décodeur au format The Things Stack.</li>
+    <li><b>4 · Radio</b>Temps d'antenne LoRa (formule Semtech) de trois stratégies, en SF7 et SF12.</li>
+  </ol>
+
+  <h2>Les roulements, de la mise en route à la panne</h2>
+  <div class="controls"><label for="sensor">Capteur</label> <select id="sensor"></select> <span class="muted" id="sensor-info"></span></div>
+  <svg id="chart" viewBox="0 0 900 340" role="img" aria-label="Score d'anomalie au cours de l'essai"></svg>
+  <div class="legend">
+    <span style="--c: var(--primary)">z-score</span>
+    <span style="--c: var(--accent)">autoencodeur INT8 (erreur de reconstruction)</span>
+    <span style="--c: #8a939b">seuils</span>
+  </div>
+  <p class="muted">Échelle logarithmique. Chaque point est le maximum d'une fenêtre, pour que les pics restent visibles. Les traits verticaux marquent la première alerte de chaque détecteur.</p>
+
+  <h2>Détection</h2>
+  <p class="muted">« Avant la fin » : avance de la première alerte sur la fin de l'essai. « Déclenchements » : nombre de fois où l'alerte s'allume.</p>
+  <div class="table-wrap"><table id="detect"></table></div>
+
+  <h2>Budget radio d'un capteur, par jour</h2>
+  <p class="muted" id="radio-note"></p>
+  <div class="table-wrap"><table id="radio"></table></div>
+
+  <h2>Coût du calcul</h2>
+  <p class="muted" id="machine"></p>
+  <div class="table-wrap"><table id="cost"></table></div>
+
+  <h2>Ce que disent les chiffres</h2>
+  <ul>
+    <li><strong>Les quatre roulements qui cassent déclenchent une alerte bien avant la fin de l'essai</strong>, avec les deux détecteurs.</li>
+    <li><strong>Des capteurs de roulements sains alertent aussi en fin d'essai.</strong> Les quatre roulements sont sur le même arbre : un nœud signale « la machine change », pas forcément « mon roulement casse ».</li>
+    <li><strong>Le roulement 4 de l'essai 3 alerte très tôt sans être noté comme cassé.</strong> C'est la bande 7,5-8,75 kHz qui monte. Sans rapport d'inspection, impossible de dire si c'est une fausse alerte ou un vrai changement.</li>
+    <li><strong>Le z-score fait aussi bien que l'autoencodeur</strong>, avec moins de déclenchements parasites sur l'essai 3. Sur ces données, la méthode la plus sobre gagne.</li>
+    <li><strong>L'INT8 donne presque les mêmes alertes que le FP32</strong>, mais sur ce processeur, il est plus lent et son fichier est plus gros. Pour 271 paramètres, les nœuds de quantification pèsent plus que les poids. L'INT8 se justifie sur un microcontrôleur, pas ici.</li>
+    <li><strong>Le calcul coûteux, c'est la FFT, pas le modèle.</strong> Le levier, c'est la taille et la fréquence des enregistrements.</li>
+    <li><strong>La radio tranche</strong> : le signal brut est impossible, les indicateurs sont lourds en SF12, et l'alerte seule ne coûte presque rien. C'est l'argument pour décider sur le capteur.</li>
+  </ul>
+
+  <h2>Essayer le décodeur de trames</h2>
+  <p class="muted">Collez une trame en hexadécimal. Le champ contient une vraie trame d'indicateurs de 26 octets (premier enregistrement de l'essai 2, roulement 1) ; « 0101 » est une trame d'alerte.</p>
+  <div class="controls"><input id="hex" value="" aria-label="Trame en hexadécimal"> <button id="decode">Décoder</button></div>
+  <pre id="decoded"></pre>
+
+  <h2>Limites</h2>
+  <ul>
+    <li>Aucun microcontrôleur testé : le temps de calcul est mesuré sur un PC portable. La puissance récoltée n'est pas modélisée (aucun chiffre en watts n'est publié), donc les stratégies sont comparées en temps d'antenne.</li>
+    <li>Banc d'essai à 2000 tr/min constants. Une machine industrielle change de régime, et un z-score figé déclencherait à chaque changement.</li>
+    <li>La documentation date les pannes seulement « à la fin de l'essai ». Les heures d'avance mesurent l'avance sur la casse, pas une précision de détection.</li>
+    <li>Un seul accéléromètre par roulement. Les instants machine arrêtée sont exclus.</li>
+  </ul>
+
+  <footer>
+    Nobel Djessou · ingénieur IA embarquée ·
+    <a href="https://github.com/profirst30/moiz-vibration-edge">code sur GitHub</a> ·
+    <a href="https://www.linkedin.com/in/nobel-djessou/">LinkedIn</a><br>
+    Données : J. Lee, H. Qiu, G. Yu, J. Lin et Rexnord Technical Services (2007), IMS, University of Cincinnati, « Bearing Data Set », NASA Prognostics Data Repository.
+  </footer>
+</main>
+<script src="decoder.js"></script>
+<script>
+  const el = (tag, text, cls) => { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; };
+  const fr = (x, d = 1) => x.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  function table(id, head, rows, numFrom = 1) {
+    const t = document.getElementById(id);
+    t.replaceChildren();
+    const tr = t.createTHead().insertRow();
+    head.forEach((h, i) => tr.appendChild(el('th', h, i >= numFrom ? 'num' : '')));
+    const body = t.createTBody();
+    rows.forEach(r => { const row = body.insertRow(); r.forEach((c, i) => row.appendChild(c instanceof Node ? c : el('td', c, i >= numFrom ? 'num' : ''))); });
+  }
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = (tag, attrs) => { const e = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+
+  function chart(s) {
+    const c = document.getElementById('chart'); c.replaceChildren();
+    const W = 900, H = 340, L = 56, R = 16, T = 16, B = 40;
+    const all = [...s.zscore, ...s.ae_int8, s.thr_zscore, s.thr_ae_int8].filter(v => v > 0);
+    const lo = Math.log10(Math.min(...all)), hi = Math.log10(Math.max(...all));
+    const xmax = s.hours[s.hours.length - 1];
+    const x = h => L + (W - L - R) * h / xmax, y = v => T + (H - T - B) * (1 - (Math.log10(Math.max(v, 1e-9)) - lo) / (hi - lo || 1));
+    for (let p = Math.ceil(lo); p <= Math.floor(hi); p++) {
+      c.appendChild(svg('line', { x1: L, x2: W - R, y1: y(10 ** p), y2: y(10 ** p), stroke: '#dee2e6' }));
+      const t = svg('text', { x: L - 8, y: y(10 ** p) + 4, 'text-anchor': 'end', 'font-size': 12, fill: '#5c6670' }); t.textContent = p >= 0 ? String(10 ** p) : (10 ** p).toFixed(-p); c.appendChild(t);
+    }
+    const step = xmax > 400 ? 200 : xmax > 100 ? 50 : 25;
+    for (let h = 0; h <= xmax; h += step) {
+      const t = svg('text', { x: x(h), y: H - 18, 'text-anchor': 'middle', 'font-size': 12, fill: '#5c6670' }); t.textContent = h + ' h'; c.appendChild(t);
+    }
+    [['zscore', '#1a5c9e', s.thr_zscore, s.alert_zscore], ['ae_int8', '#fe8254', s.thr_ae_int8, s.alert_ae_int8]].forEach(([k, col, thr, alert]) => {
+      c.appendChild(svg('polyline', { points: s[k].map((v, i) => `${x(s.hours[i]).toFixed(1)},${y(v).toFixed(1)}`).join(' '), fill: 'none', stroke: col, 'stroke-width': 1.5 }));
+      c.appendChild(svg('line', { x1: L, x2: W - R, y1: y(thr), y2: y(thr), stroke: col, 'stroke-dasharray': '5 4', opacity: 0.7 }));
+      if (alert !== null) c.appendChild(svg('line', { x1: x(alert), x2: x(alert), y1: T, y2: H - B, stroke: col, 'stroke-width': 2 }));
+    });
+  }
+
+  Promise.all(['results.json', 'series.json'].map(u => fetch(u).then(r => r.json()))).then(([res, series]) => {
+    const sel = document.getElementById('sensor');
+    Object.entries(series).forEach(([k, s]) => {
+      const [t, b] = k.split('_');
+      sel.appendChild(new Option(`Essai ${t.slice(4)}, roulement ${b.slice(1)}${s.failed ? ' (cassé à la fin)' : ''}`, k));
+    });
+    const show = () => { const s = series[sel.value]; chart(s);
+      document.getElementById('sensor-info').textContent = `${fr(s.hours[s.hours.length - 1])} h d'essai`; };
+    sel.addEventListener('change', show);
+    sel.value = 'test2_b1'; show();
+
+    const cell = a => a.first_alert_h === null ? 'aucune alerte' : `${fr(a.lead_h)} h avant la fin (${a.onsets})`;
+    table('detect', ['essai', 'roulement', 'cassé à la fin', 'z-score', 'autoencodeur FP32', 'autoencodeur INT8'],
+      res.sensors.map(r => [r.test.replace('test', 'essai '), String(r.bearing), el('td', r.failed ? 'oui' : 'non', r.failed ? 'yes' : ''),
+        cell(r.zscore), cell(r.ae_fp32), cell(r.ae_int8)]), 99);
+
+    const names = { raw: 'signal brut', features: 'indicateurs', alert_only: 'alerte seule' };
+    document.getElementById('radio-note').textContent = `Un enregistrement toutes les 10 minutes (${res.settings.snapshots_per_day} par jour). Signal brut : ${fr(res.frames.raw_bytes, 0)} octets ; indicateurs : ${res.frames.feature_bytes} octets ; alerte : ${res.frames.status_bytes} octets. En EU868, le rapport cyclique limite chaque appareil à 1 % du temps, soit 864 s par jour.`;
+    table('radio', ['stratégie', 'SF', 'trames par jour', "temps d'antenne (s)", 'part du rapport cyclique'],
+      res.radio.map(r => [names[r.strategy], String(r.sf), fr(r.uplinks_per_day), fr(r.airtime_s_per_day, 2),
+        el('td', fr(100 * r.duty_cycle_share, 2) + ' %', 'num ' + (r.duty_cycle_share > 1 ? 'err' : r.duty_cycle_share < 0.1 ? 'ok' : ''))]));
+
+    const m = res.machine, k = res.cost;
+    document.getElementById('machine').textContent = `${m.cpu} · ${m.os} · ONNX Runtime ${m.onnxruntime} · un thread, médiane de 200 exécutions`;
+    table('cost', ['étape', 'temps par enregistrement (µs)', 'taille'], [
+      ['indicateurs (FFT de 20 480 points)', fr(k.features_us), '-'],
+      ['autoencodeur FP32', fr(k.ae_fp32_us), `${fr(k.ae_fp32_bytes, 0)} octets`],
+      ['autoencodeur INT8', fr(k.ae_int8_us), `${fr(k.ae_int8_bytes, 0)} octets`]]);
+    hex.value = res.frames.sample_hex;  // first snapshot of test 2, bearing 1, encoded by src/payload.py
+  }).catch(() => { document.getElementById('machine').textContent = 'Les résultats ne se chargent pas : ouvrez la page via un serveur web.'; });
+
+  const hex = document.getElementById('hex');
+  document.getElementById('decode').addEventListener('click', () => {
+    const h = hex.value.replace(/[^0-9a-f]/gi, '');
+    const bytes = (h.match(/../g) || []).map(b => parseInt(b, 16));
+    document.getElementById('decoded').textContent = JSON.stringify(decodeUplink({ bytes }), null, 2);
+  });
+</script>
+</body>
+</html>
