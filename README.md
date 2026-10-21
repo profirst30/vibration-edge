@@ -103,5 +103,3 @@ python -m pytest tests
 La page de démo (`docs/index.html`) lit `docs/results.json` et `docs/series.json`. Pour la voir en local : `python -m http.server -d docs`.
 
 Données : J. Lee, H. Qiu, G. Yu, J. Lin et Rexnord Technical Services (2007), IMS, University of Cincinnati, « Bearing Data Set », NASA Prognostics Data Repository, NASA Ames Research Center. Données publiques mises à disposition par la NASA, qui demande de citer la source ; aucune licence plus précise n'est indiquée.
-
-Nobel Djessou · [LinkedIn](https://www.linkedin.com/in/nobel-djessou/) · [GitHub](https://github.com/profirst30)
